@@ -43,7 +43,8 @@ class Denormalizer:
             withColumn(self.journal_trial_dates, self.clean_null(drugs_and_trials.journal_trial_dates)). \
             withColumn(self.trial_dates, self.clean_null(drugs_and_trials.trial_dates)). \
             withColumn(self.pubmed_dates, self.clean_null(drugs_and_pubmed.pubmed_dates)). \
-            withColumn(self.journals_and_dates, f.flatten(f.array(self.journal_pubmed_dates, self.journal_trial_dates))).\
+            withColumn(self.journals_and_dates,
+                       f.flatten(f.array(self.journal_pubmed_dates, self.journal_trial_dates))). \
             drop(self.journal_pubmed_dates, self.journal_trial_dates)
 
     @staticmethod
