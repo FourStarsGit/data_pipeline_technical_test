@@ -1,15 +1,17 @@
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as f
+import sys
 
 
-# TODO output path en paramètre
 if __name__ == '__main__':
+
+    input_path = "output/json/" if len(sys.argv) <= 1 else sys.argv[1]
     spark = SparkSession.builder.appName("ServierTechnicalTest").getOrCreate()
 
     journals_col = "journals"
     count_col = "count"
 
-    df = spark.read.json("output/json/")
+    df = spark.read.json(input_path)
     result = df.select(f.explode(f.array_distinct(df.journals_and_dates.journal)).alias(journals_col)). \
         groupBy(journals_col).agg(f.count(journals_col).alias(count_col))
 
@@ -20,7 +22,3 @@ if __name__ == '__main__':
 
     print("The journal(s) which contain(s) the most drugs is/are: " + selected_journals +
           ". The maximum drugs mentioned is " + str(max_drugs) + ".")
-
-
-
-

@@ -45,10 +45,10 @@ Pour exécuter le projet, il suffit de cloner le projet, de se rendre dans le r�
 > git clone https://github.com/FourStarsGit/data_pipeline_technical_test.git
 > cd data_pipeline_technical_test
 
-> spark-submit main.py
+> spark-submit main.py output/json/
 ----
 
-Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv` et exécute un traitement.
+Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv` et crée un ensemble de fichiers dans le dossier spécifié en paramètre (ici `output/json/`). Volontairement, les 4 fichiers d'entrée ne font pas partis des paramètres d'entée de la commande afin de la rendre plus lisible, mais dans un cas de production avec un ensemble de fichiers variables, il faudrait modifier cette gestion pour qu'elle soit plus générique.
 
 Le processus d'exécution est le suivant :
 
@@ -132,12 +132,12 @@ Le traitement Ad-Hoc est disponible dans le fichier `get_journal_with_most_drugs
 
 On récupère les données contenus dans le tableau de structures `journals_and_dates`, on supprime les doublons, on se concentre sur les noms des journaux et on transpose chaque élément du tableau en ligne. Cela permet de regrouper facilement chaque occurrence identique afin de compter les journaux qui citent un certain nombre de médicaments différents.
 
-On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité, on affiche tous les journaux qui citent le nombre maximum de médicaments dans le dataset.
+On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité, on affiche tous les journaux qui citent le nombre maximum de médicaments dans le dataset. Il faut bien évidemment avoir exécuter le programme `main.py` avant pour obtenir des résultats.
 
-Pour exécuter le programme, il suffit d'exécuter la commande suivante :
+Pour exécuter le programme, il suffit d'exécuter la commande suivante (l'argument est le dossier où se situe(nt)) le(s) fichier(s) JSON à lire) :
 
 ----
-> spark-submit get_journal_with_most_drugs.py
+> park-submit get_journal_with_most_drugs.py output/json/
 ----
 
 Et d'observer le message du type suivant dans la console :

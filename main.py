@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+import sys
 from src.extract.extractor import Extractor
 from src.transform.denormalizer import Denormalizer
 from src.write.writer import Writer
@@ -11,6 +12,7 @@ def is_trace_enabled():
 
 
 if __name__ == '__main__':
+    output_path = "output/json/" if len(sys.argv) <= 1 else sys.argv[1]
     spark = SparkSession.builder.appName("ServierTechnicalTest").getOrCreate()
 
     # Extract data into dataframe
@@ -34,4 +36,4 @@ if __name__ == '__main__':
 
     # Write to output
     writer = Writer(denormalized_df)
-    writer.to_json("output/json")
+    writer.to_json(output_path)
