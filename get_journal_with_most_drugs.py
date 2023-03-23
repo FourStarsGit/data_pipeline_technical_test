@@ -1,6 +1,5 @@
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as f
-from src.extract.extractor import Extractor
 
 
 # TODO output path en paramètre
@@ -10,8 +9,7 @@ if __name__ == '__main__':
     journals_col = "journals"
     count_col = "count"
 
-    extractor = Extractor(spark)
-    df = extractor.from_json("output/json/")
+    df = spark.read.json("output/json/")
     result = df.select(f.explode(f.array_distinct(df.journals_and_dates.journal)).alias(journals_col)). \
         groupBy(journals_col).agg(f.count(journals_col).alias(count_col))
 

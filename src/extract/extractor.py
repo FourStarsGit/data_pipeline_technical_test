@@ -11,6 +11,7 @@ class Extractor:
     journal_col = "journal"
     bad_characters = "\\\\xc3\\\\x28"
 
+    # Load 4 input files and convert them to 3 DataFrames (with union for pubmed data)
     def load_all(self, drugs_file, pubmed_csv, pubmed_json, trials_file):
         # UDF used to standardize dates with unique format : %d/%m/%Y
         @udf
@@ -32,8 +33,14 @@ class Extractor:
             withColumn("date", to_standard_date_format("date"))
         return drugs, pubmed, trials
 
+    # Create DataFrame from CSV file with header
     def from_csv(self, path):
         return self.spark.read.option("header", True).csv(path)
 
+    # Create DataFrame from JSON file, first convert it to JSON records and then send it to be read by Spark
     def from_json(self, path):
-        return self.spark.read.json(path)
+        with open(path, "r") as file:
+            data = file.read().strip().replace("\n", "")
+            updated = data.replace("},", "}\n")[1:-1]
+
+        return self.spark.read.json(self.spark.sparkContext.parallelize(updated.split("\n")))
