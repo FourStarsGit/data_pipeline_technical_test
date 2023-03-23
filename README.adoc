@@ -1,16 +1,131 @@
+:toc:
+:toc-title: Table des matières
+
 = Test technique Thomas ZUK
 
 == Projet de Data Pipeline
 
+[NOTE]
+====
+L'intégralité de cette documentation est écrite en français pour répondre directement à l'énoncé. Le code Python est quant à lui en anglais.
+Ce document contient également les réponses aux différentes questions posées dans l'énoncé.
+====
+
 === Description du projet
+
+
+Le projet consiste à récupérer des données concernant des médicaments ainsi que leurs mentions dans des articles, des publications et des résultats d'essais cliniques :
+
+- Pour répondre au mieux aux différentes contraintes de traitement de données volumineuses, j'ai choisi d'utiliser le https://spark.apache.org/[Framework de traitement distribué Apache Spark]. Puisque le langage imposé est Python, ce Framework s'y prête bien si on utilise son dérivé PySpark. Il s'agit d'un outil couramment utilisé par les Data Engineers pour traiter de larges volumes de données en batch ou en streaming. L'avantage principal est sa résilience et sa capacité à s'intégrer dans un cluster distribué (on-premises ou dans le Cloud) afin de bénéficier de la puissance d'un nombre variable de noeuds en fonction de la charge. Les traitements sont exécutés en mémoire, grâce à des abstractions simple d'utilisation appelées des `DataFrames` (plus optimisés que les RDDs).
+
+- Pour répondre à la problématique de réutilisation de certaines étapes du pipeline, le code a été divisé en modules qui représentent trois packages Python correspondant aux différentes étapes : `extract`, `transform` et `write (pour la partie load)`. Toutes les classes ainsi que leurs méthodes sont génériques.
+
+- Apache Spark a également été choisi afin de répondre à la problématique d'orchestration. En effet, il s'intègre parfaitement avec des outils tels qu'Apache Oozie ou Apache Airflow dans le but de planifier des lancements de Jobs par exemple. En effet, Spark reste un outil communément utilisé avec ces solutions.
+
+- Pour répondre à la problématique des bonnes pratiques, le code est :
+** versionné (via Git) : le branching model consiste en la création de `feature branch`, une fois le développement terminé il suffit d'ouvrir une PR qui sera mergée après review par une autre personne de l'équipe
+** commenté
+** documenté (via ce présent document)
+** découpé en 3 modules principaux en fonction des étapes de traitement
 
 === Pré-requis
 
+- Python 3.7+ : https://www.python.org/downloads/[Téléchargement s'il n'est pas déjà installé]
+- PySpark installé et configuré (via `pip` ou `conda` par exemple) : https://spark.apache.org/docs/latest/api/python/getting_started/install.html[Document d'installation]
+
 === Exécution
+
+Pour exécuter le projet, il suffit de cloner le projet, de se rendre dans le répertoire concerné et d'exécuter la commande `spark-submit` sur le fichier `main.py` :
+
+----
+> git clone https://github.com/FourStarsGit/data_pipeline_technical_test.git
+> cd data_pipeline_technical_test
+
+> spark-submit main.py
+----
+
+Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv`.
+
+Le processus d'exécution est le suivant :
+
+. Les fichiers sont chargés en mémoire dans des DataFrames. On réalise une union des DataFrames issus des fichiers `pubmed.csv` et `pubmed.json` pour avoir un seul DataFrame sur les données de `pubmed` (voir le package `extract`).
+. On réunit ces 3 DataFrames grâce à des jointures afin de créer un unique DataFrame dénormalisé. Ce dernier contient la structure suivante qui permettra d'être sauvegardée facilement en JSON :
++
+----
+root
+ |-- drug: string (nullable = true)
+ |-- atccode: string (nullable = true)
+ |-- pubmed_dates: array (nullable = true)
+ |    |-- element: string (containsNull = false)
+ |-- trial_dates: array (nullable = true)
+ |    |-- element: string (containsNull = false)
+ |-- journals_and_dates: array (nullable = true)
+ |    |-- element: struct (containsNull = false)
+ |    |    |-- journal: string (nullable = true)
+ |    |    |-- date: string (nullable = true)
+
+----
+Cette structure nous permet d'avoir, pour chaque médicament :
+.. Son ATCCODE
+.. La liste des dates associées à une publication d'articles
+.. La liste des dates associées aux essais cliniques
+.. La liste des journaux où son nom a été publié, associés aux dates correspondantes
++
+Tout cela a été réalisé grâce à des jointures visibles dans le fichier `denormalizer.py` du package `transform`, en partant des données sur les médicaments.
+
+. Enfin, on écrit le DataFrame dénormalisé en JSON grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark.
 
 === Traitement Ad-Hoc
 
+Le traitement Ad-Hoc est disponible dans le fichier `get_journal_with_most_drugs.py`. Il lit facilement le fichier `JSON records` généré précédemment. Ensuite le traitement se fait intégralement grâce à des fonctions natives de Spark.
+
+On récupère les données contenus dans le tableau de structures `journals_and_dates`, on supprime les doublons, on se concentre sur les noms des journaux et on transpose chaque élément du tableau en ligne. Cela permet de regrouper facilement chaque occurrence identique afin de compter les journaux qui citent un certain nombre de médicaments différents.
+
+On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité, on affiche tous les journaux qui citent le nombre maximum de médicaments dans le dataset.
+
+Pour exécuter le programme, il suffit d'exécuter la commande suivante :
+
+----
+> spark-submit get_journal_with_most_drugs.py
+----
+
+Et d'observer le message du type suivant dans la console :
+
+----
+The journal(s) which contain(s) the most drugs is/are: Psychopharmacology, The journal of maternal-fetal & neonatal medicine. The maximum drugs mentioned is 2.
+----
+
 == Réponses aux Questions (Pour aller plus loin)
+
+=== Déploiement de Spark dans un environnement distribué
+
+Spark est un Framework de calcul distribué idéal pour les grosses volumétries de données. Dans tous les exemples données précédemment pour exécuter un Job, tous les paramètres font que Spark s'exécute en local (`--master local[*]` par défaut).
+
+Le premier élément à modifier est donc d'exécuter ce Job sur en cluster dédié (on-premises ou sur du cloud, dans un cluster `DataProc` si l'on prend l'exemple de GCP). On bénéficiera ainsi de sa portabilité sans devoir modifier du code. Il faut également changer la commande d'exécution du Job pour lui donner beaucoup plus de puissance de calcul. La liste des paramètres pour les Jobs Spark est disponible https://spark.apache.org/docs/latest/submitting-applications.html[ici]. Les principaux sont : le `deploy-mode` (avec la valeur `cluster` pour les traitements distribués), le nombre d'exécuteurs, la mémoire allouée pour chaque exécuteur et la mémoire allouée pour le driver. Plus le nombre de noeuds, plus la puissance de calcul est élevée (tant qu'on ne commet pas d'erreurs sur du mauvais partitionnement ou de data skewing).
+
+Avec des données réelles, il y a également des tests de charge à réaliser pour obtenir des benchmarks et ainsi pouvoir faire du "performance tuning" avec les différents paramètres de Spark.
+
+=== L'analyse du DAG
+
+Une fois exécuté sur le cluster, il est possible de rencontrer des ralentissements et des bottlenecks dans le graphe d'exécution de Spark et des différentes tâches traitées en parallèle.
+
+L'analyse de ces exécutions permettra de déterminer s'il y a par exemple du data skewing (car certaines étapes du code comporte des `groupBy`). Dans un tel cas, il faudra penser à modifier la façon de faire dans le code afin d'éviter le data skewing ou même un shuffling trop régulier.
+
+De plus, certains DataFrames seront peut-être recalculés plusieurs fois (car ils lisent plusieurs fois un même fichier par exemple). Dans ce cas, on pourra chercher à optimiser en utilisant les fonctions `.persist()` ou `.cache()` afin de mettre certains DataFrames en cache et leur éviter re-calcul.
+
+=== Optimisation des données pour la lecture des données JSON
+
+Pour le moment, il y a une union qui est réalisée entre les données JSON et CSV de `pubmed`, avec en plus la transformation du fichier JSON object en JSON records (pour être intégré dans Spark). Ceci est consommateur en temps et pour optimiser on pourrait réaliser ce traitement en dehors de Spark, via un module plus adapté, ou directement faire en sorte de réaliser cette modification à la sortie du producteur. Il faut bien évidemment voir quelques technologies sont utilisées pour produire ce fichier en amont et voir s'il est possible de générer le JSON records avant le traitement. Cela évitera l'étape de transformation qui est consommatrice.
+
+=== Base de données de destination
+
+En écriture, Spark possède beaucoup de connecteurs pour des formats différents. Ici, on utilise du JSON records qui est certes, plus optimisé pour le traitement distribué que le JSON object, mais cela ne demeure pas une bonne pratique de le stocker sur un fichier. Si l'on peut faire évoluer l'architecture, il peut être intéressant que la sortie soit écrite dans une base de type NoSQL. On peut penser à Elasticsearch par exemple ou encore MongoDB qui permettent de stocker sous forme de documents JSON.
+
+Si le stockage n'est pas un problème dans l'architecture cible, on peut même penser à utiliser des bases NoSQL qui favorisent grandement la dénormalisation comme HBase ou BigTable sur GCP. En effet, ces bases supportent de grandes volumétries de lecture et d'écriture, à condition que la `rowkey` soit bien définie et que chaque table serve un cas d'usage précis comme la question : `quel est le journal qui mentionne le plus de médicaments différents ?`
+
+Dans les deux cas, les connecteurs existent pour Spark, il suffirait donc de modifier légèrement le DataFrameWriter dans la classe `Writer`.
+
+
 
 == Réponses à la partie SQL
 
