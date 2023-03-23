@@ -25,8 +25,10 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 - Pour répondre à la problématique des bonnes pratiques, le code est :
 ** versionné (via Git) : le branching model consiste en la création de `feature branch`, une fois le développement terminé il suffit d'ouvrir une PR qui sera mergée après review par une autre personne de l'équipe
 ** commenté
-** documenté (via ce présent document)
+** documenté (via ce présent README)
 ** découpé en 3 modules principaux en fonction des étapes de traitement
+** composé de variables et de classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre et favoriser le code auto-documenté
+** testé via des tests unitaires présents dans le package `tests`
 
 === Pré-requis
 
@@ -35,21 +37,23 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 
 === Exécution
 
+==== Le Job Batch
+
 Pour exécuter le projet, il suffit de cloner le projet, de se rendre dans le répertoire concerné et d'exécuter la commande `spark-submit` sur le fichier `main.py` :
 
 ----
 > git clone https://github.com/FourStarsGit/data_pipeline_technical_test.git
 > cd data_pipeline_technical_test
 
-> spark-submit main.py
+> spark-submit main.py output/json/
 ----
 
-Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv`.
+Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv` et crée un ensemble de fichiers dans le dossier spécifié en paramètre (ici `output/json/`). Volontairement, les 4 fichiers d'entrée ne font pas partis des paramètres d'entée de la commande afin de la rendre plus lisible, mais dans un cas de production avec un ensemble de fichiers variables, il faudrait modifier cette gestion pour qu'elle soit plus générique.
 
 Le processus d'exécution est le suivant :
 
-. Les fichiers sont chargés en mémoire dans des DataFrames. On réalise une union des DataFrames issus des fichiers `pubmed.csv` et `pubmed.json` pour avoir un seul DataFrame sur les données de `pubmed` (voir le package `extract`).
-. On réunit ces 3 DataFrames grâce à des jointures afin de créer un unique DataFrame dénormalisé. Ce dernier contient la structure suivante qui permettra d'être sauvegardée facilement en JSON :
+. *EXTRACTION* : Les fichiers sont chargés en mémoire dans des DataFrames. On réalise une union des DataFrames issus des fichiers `pubmed.csv` et `pubmed.json` pour avoir un seul DataFrame sur les données de `pubmed` (voir le package `extract`). Dans cette étape, il y a aussi quelques filtres appliqués pour nettoyer la donnée (qui pourront être améliorés dans une version ultérieure comme stipulé plus loin)
+. *TRANSFORMATION* : On réunit ces 3 DataFrames grâce à des jointures afin de créer un unique DataFrame dénormalisé. Ce dernier contient la structure suivante qui permettra d'être sauvegardée facilement en JSON :
 +
 ----
 root
@@ -73,7 +77,54 @@ Cette structure nous permet d'avoir, pour chaque médicament :
 +
 Tout cela a été réalisé grâce à des jointures visibles dans le fichier `denormalizer.py` du package `transform`, en partant des données sur les médicaments.
 
-. Enfin, on écrit le DataFrame dénormalisé en JSON grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark.
+. *ECRITURE* : Enfin, on écrit le DataFrame dénormalisé en JSON dans un répertoire de sortie ("output/json")grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark. Voici un exemple d'une ligne de JSON (façon "pretty" et non sur une seule ligne pour la lisibilité) :
++
+[source,json]
+----
+{
+  "drug": "ISOPRENALINE",
+  "atccode": "6302001",
+  "pubmed_dates": [
+    "01/01/2020"
+  ],
+  "trial_dates": [],
+  "journals_and_dates": [
+    {
+      "journal": "Journal of photochemistry and photobiology. B, Biology",
+      "date": "01/01/2020"
+    }
+  ]
+}
+----
+
+. L'exécution se termine avec le message suivant dans les logs :
++
+----
+Data have been successfully save as JSON records
+----
+
+[NOTE]
+====
+Si le niveau de log activé est TRACE dans Spark, les différents DataFrames de l'ensemble de l'exécution apparaitront dans la console. La fonction utilisée est `.show()`, elle n'est volontairement appelée que pour des raisons de debug puisqu'elle réalise un retour au driver, ce qui ralentit considérablement les performances.
+====
+
+==== Exécuter les tests unitaires
+
+Pour cela, rendez-vous via le terminal dans le dossier du projet et exécutez les commandes suivantes :
+
+----
+> pip install pyspark
+> python -m unittest tests/*/*.py
+----
+
+Le résultat qui apparait dans la console est :
+
+----
+----------------------------------------------------------------------
+Ran 6 tests in 17.085s
+
+OK
+----
 
 === Traitement Ad-Hoc
 
@@ -81,18 +132,18 @@ Le traitement Ad-Hoc est disponible dans le fichier `get_journal_with_most_drugs
 
 On récupère les données contenus dans le tableau de structures `journals_and_dates`, on supprime les doublons, on se concentre sur les noms des journaux et on transpose chaque élément du tableau en ligne. Cela permet de regrouper facilement chaque occurrence identique afin de compter les journaux qui citent un certain nombre de médicaments différents.
 
-On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité, on affiche tous les journaux qui citent le nombre maximum de médicaments dans le dataset.
+On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité, on affiche tous les journaux qui citent le nombre maximum de médicaments dans le dataset. Il faut bien évidemment avoir exécuter le programme `main.py` avant pour obtenir des résultats.
 
-Pour exécuter le programme, il suffit d'exécuter la commande suivante :
+Pour exécuter le programme, il suffit d'exécuter la commande suivante (l'argument est le dossier où se situe(nt)) le(s) fichier(s) JSON à lire) :
 
 ----
-> spark-submit get_journal_with_most_drugs.py
+> park-submit get_journal_with_most_drugs.py output/json/
 ----
 
 Et d'observer le message du type suivant dans la console :
 
 ----
-The journal(s) which contain(s) the most drugs is/are: Psychopharmacology, The journal of maternal-fetal & neonatal medicine. The maximum drugs mentioned is 2.
+The journal(s) which contain(s) the most drugs is/are: Psychopharmacology, Journal of emergency nursing, The journal of maternal-fetal & neonatal medicine. The maximum drugs mentioned is 2.
 ----
 
 == Réponses aux Questions (Pour aller plus loin)
@@ -113,9 +164,11 @@ L'analyse de ces exécutions permettra de déterminer s'il y a par exemple du da
 
 De plus, certains DataFrames seront peut-être recalculés plusieurs fois (car ils lisent plusieurs fois un même fichier par exemple). Dans ce cas, on pourra chercher à optimiser en utilisant les fonctions `.persist()` ou `.cache()` afin de mettre certains DataFrames en cache et leur éviter re-calcul.
 
+Il serait également nécessaire d'améliorer la gestion d'erreurs afin de réaliser un meilleur contrôle sur la qualité de données, en fonction des différents datasets réels.
+
 === Optimisation des données pour la lecture des données JSON
 
-Pour le moment, il y a une union qui est réalisée entre les données JSON et CSV de `pubmed`, avec en plus la transformation du fichier JSON object en JSON records (pour être intégré dans Spark). Ceci est consommateur en temps et pour optimiser on pourrait réaliser ce traitement en dehors de Spark, via un module plus adapté, ou directement faire en sorte de réaliser cette modification à la sortie du producteur. Il faut bien évidemment voir quelques technologies sont utilisées pour produire ce fichier en amont et voir s'il est possible de générer le JSON records avant le traitement. Cela évitera l'étape de transformation qui est consommatrice.
+Pour le moment, il y a une union qui est réalisée entre les données JSON et CSV de `pubmed`, avec en plus la transformation du fichier d'entrée JSON object (`pubmed.json`) en JSON records (pour être intégré dans Spark). Ceci est consommateur en temps et pour optimiser on pourrait réaliser ce traitement en dehors du pipeline, via un module plus adapté, ou directement faire en sorte de réaliser cette modification à la sortie du producteur. Il faut bien évidemment voir quelques technologies sont utilisées pour produire ce fichier en amont et voir s'il est possible de générer le JSON records avant le traitement. Cela évitera l'étape de transformation qui est aujourd'hui consommatrice.
 
 === Base de données de destination
 
