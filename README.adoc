@@ -4,23 +4,29 @@
 = Test technique Thomas ZUK
 
 == Projet de Data Pipeline
-icon:heart[2x,role=red]
+
 [NOTE]
 ====
 L'intégralité de cette documentation est écrite en français pour répondre directement à l'énoncé. Le code Python est quant à lui en anglais.
 Ce document contient également les réponses aux différentes questions posées dans l'énoncé.
 ====
 
-=== Description du projet icon:file[]
+=== Description du projet
 
 
-Le projet consiste à récupérer des données concernant des médicaments ainsi que leurs mentions dans des articles, des publications et des résultats d'essais cliniques.
+Le projet consiste à récupérer des données concernant des médicaments ainsi que leurs mentions dans des articles, des publications et des résultats d'essais cliniques :
 
-Pour répondre au mieux aux différentes contraintes de traitement de données volumineuses, j'ai choisi d'utiliser le https://spark.apache.org/[Framework de traitement distribué Apache Spark]. Puisque le langage imposé est Python, ce Framework s'y prête bien si on utilise son dérivé PySpark. Il s'agit d'un outil couramment utilisé par les Data Engineers pour traiter de larges volumes de données en batch ou en streaming. L'avantage principal est sa résilience et sa capacité à s'intégrer dans un cluster distribué (on-premises ou dans le Cloud) afin de bénéficier de la puissance d'un nombre variable de noeuds en fonction de la charge. Les traitements sont exécutés en mémoire, grâce à des abstractions simple d'utilisation appelées des `DataFrames` (plus optimisés que les RDDs).
+- Pour répondre au mieux aux différentes contraintes de traitement de données volumineuses, j'ai choisi d'utiliser le https://spark.apache.org/[Framework de traitement distribué Apache Spark]. Puisque le langage imposé est Python, ce Framework s'y prête bien si on utilise son dérivé PySpark. Il s'agit d'un outil couramment utilisé par les Data Engineers pour traiter de larges volumes de données en batch ou en streaming. L'avantage principal est sa résilience et sa capacité à s'intégrer dans un cluster distribué (on-premises ou dans le Cloud) afin de bénéficier de la puissance d'un nombre variable de noeuds en fonction de la charge. Les traitements sont exécutés en mémoire, grâce à des abstractions simple d'utilisation appelées des `DataFrames` (plus optimisés que les RDDs).
 
 - Pour répondre à la problématique de réutilisation de certaines étapes du pipeline, le code a été divisé en modules qui représentent trois packages Python correspondant aux différentes étapes : `extract`, `transform` et `write (pour la partie load)`. Toutes les classes ainsi que leurs méthodes sont génériques.
 
 - Apache Spark a également été choisi afin de répondre à la problématique d'orchestration. En effet, il s'intègre parfaitement avec des outils tels qu'Apache Oozie ou Apache Airflow dans le but de planifier des lancements de Jobs par exemple. En effet, Spark reste un outil communément utilisé avec ces solutions.
+
+- Pour répondre à la problématique des bonnes pratiques, le code est :
+** versionné (via Git) : le branching model consiste en la création de `feature branch`, une fois le développement terminé il suffit d'ouvrir une PR qui sera mergée après review par une autre personne de l'équipe
+** commenté
+** documenté (via ce présent document)
+** découpé en 3 modules principaux en fonction des étapes de traitement
 
 === Pré-requis
 
@@ -115,7 +121,7 @@ Pour le moment, il y a une union qui est réalisée entre les données JSON et C
 
 En écriture, Spark possède beaucoup de connecteurs pour des formats différents. Ici, on utilise du JSON records qui est certes, plus optimisé pour le traitement distribué que le JSON object, mais cela ne demeure pas une bonne pratique de le stocker sur un fichier. Si l'on peut faire évoluer l'architecture, il peut être intéressant que la sortie soit écrite dans une base de type NoSQL. On peut penser à Elasticsearch par exemple ou encore MongoDB qui permettent de stocker sous forme de documents JSON.
 
-Si le stockage n'est pas un problème dans l'architecture cible, on peut même penser à utiliser des bases NoSQL qui favorisent grandement la dénormalisation comme HBase ou BigTable sur GCP. En effet, ces bases supportent de grandes volumétries de lecture et d'écriture, à condition que la `rowkey` soit bien définie et que chaque table serve un cas d'usage précis comme la question : quel est le journal qui mentionne le plus de médicaments différents ?
+Si le stockage n'est pas un problème dans l'architecture cible, on peut même penser à utiliser des bases NoSQL qui favorisent grandement la dénormalisation comme HBase ou BigTable sur GCP. En effet, ces bases supportent de grandes volumétries de lecture et d'écriture, à condition que la `rowkey` soit bien définie et que chaque table serve un cas d'usage précis comme la question : `quel est le journal qui mentionne le plus de médicaments différents ?`
 
 Dans les deux cas, les connecteurs existent pour Spark, il suffirait donc de modifier légèrement le DataFrameWriter dans la classe `Writer`.
 
