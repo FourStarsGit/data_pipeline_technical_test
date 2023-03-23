@@ -37,6 +37,3 @@ class TestWriter(unittest.TestCase):
         list_of_files = glob.glob('output_test/json/*.json')
         latest_file = max(list_of_files, key=os.path.getctime)
         self.assertRegex(latest_file, r'part-0000.*\.json')
-
-
-

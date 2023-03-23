@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 
+# Class used for extract step
 class Extractor:
 
     def __init__(self, spark):

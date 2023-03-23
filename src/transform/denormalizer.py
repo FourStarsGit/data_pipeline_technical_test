@@ -1,6 +1,7 @@
 import pyspark.sql.functions as f
 
 
+# Class used for transform step
 class Denormalizer:
 
     pubmed_dates = "pubmed_dates"
@@ -16,6 +17,7 @@ class Denormalizer:
         self.pubmed = pubmed
         self.trials = trials
 
+    # From drugs, pubmed and trials DataFrames, creates a denormalized DataFrame with all data
     def to_linked_graph_df(self, is_trace_enabled):
 
         # Denormalize and merge drugs and pubmed data

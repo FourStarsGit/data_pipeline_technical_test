@@ -41,4 +41,3 @@ class TestDenormalizer(unittest.TestCase):
                                                                       date='01/01/2019'),
                                                                   Row(journal='Journal of emergency nursing',
                                                                       date='01/01/2020')])
-
