@@ -7,6 +7,7 @@ from src.write.writer import Writer
 # TODO Convertir les fichiers JSON d'entrée en JSON records
 # TODO Supprimer les caractères non imprimables dans les titres des journaux (\xc3\x28)
 # TODO Réconcilier les formats de dates
+# TODO le mode TRACE pour les logs
 
 if __name__ == '__main__':
     spark = SparkSession.builder.appName("ServierTechnicalTest").getOrCreate()
