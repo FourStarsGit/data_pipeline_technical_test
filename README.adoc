@@ -138,7 +138,7 @@ Pour exécuter le programme, il suffit d'exécuter la commande suivante :
 Et d'observer le message du type suivant dans la console :
 
 ----
-The journal(s) which contain(s) the most drugs is/are: Psychopharmacology, The journal of maternal-fetal & neonatal medicine. The maximum drugs mentioned is 2.
+The journal(s) which contain(s) the most drugs is/are: Psychopharmacology, Journal of emergency nursing, The journal of maternal-fetal & neonatal medicine. The maximum drugs mentioned is 2.
 ----
 
 == Réponses aux Questions (Pour aller plus loin)

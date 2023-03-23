@@ -5,7 +5,6 @@ from src.write.writer import Writer
 
 
 # TODO Convertir les fichiers JSON d'entrée en JSON records
-# TODO Réconcilier les formats de dates
 # TODO le mode TRACE pour les logs
 
 if __name__ == '__main__':
