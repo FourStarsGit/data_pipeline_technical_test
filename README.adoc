@@ -48,12 +48,12 @@ Pour exécuter le projet, il suffit de cloner le projet, de se rendre dans le r�
 > spark-submit main.py
 ----
 
-Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv`.
+Il s'agit donc d'un Job de type batch qui récupère les données des quatres fichiers : `drugs.csv`, `pubmed.csv`, `pubmed.json` et `clinical_trials.csv` et exécute un traitement.
 
 Le processus d'exécution est le suivant :
 
-. Les fichiers sont chargés en mémoire dans des DataFrames. On réalise une union des DataFrames issus des fichiers `pubmed.csv` et `pubmed.json` pour avoir un seul DataFrame sur les données de `pubmed` (voir le package `extract`).
-. On réunit ces 3 DataFrames grâce à des jointures afin de créer un unique DataFrame dénormalisé. Ce dernier contient la structure suivante qui permettra d'être sauvegardée facilement en JSON :
+. *EXTRACTION* : Les fichiers sont chargés en mémoire dans des DataFrames. On réalise une union des DataFrames issus des fichiers `pubmed.csv` et `pubmed.json` pour avoir un seul DataFrame sur les données de `pubmed` (voir le package `extract`). Dans cette étape, il y a aussi quelques filtres appliqués pour nettoyer la donnée (qui pourront être améliorés dans une version ultérieure comme stipulé plus loin)
+. *TRANSFORMATION* : On réunit ces 3 DataFrames grâce à des jointures afin de créer un unique DataFrame dénormalisé. Ce dernier contient la structure suivante qui permettra d'être sauvegardée facilement en JSON :
 +
 ----
 root
@@ -77,7 +77,7 @@ Cette structure nous permet d'avoir, pour chaque médicament :
 +
 Tout cela a été réalisé grâce à des jointures visibles dans le fichier `denormalizer.py` du package `transform`, en partant des données sur les médicaments.
 
-. Enfin, on écrit le DataFrame dénormalisé en JSON dans un répertoire de sortie ("output/json")grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark. Voici un exemple d'une ligne de JSON (façon "pretty" et non sur une seule ligne pour la lisibilité) :
+. *ECRITURE* : Enfin, on écrit le DataFrame dénormalisé en JSON dans un répertoire de sortie ("output/json")grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark. Voici un exemple d'une ligne de JSON (façon "pretty" et non sur une seule ligne pour la lisibilité) :
 +
 [source,json]
 ----
