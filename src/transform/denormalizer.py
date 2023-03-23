@@ -18,7 +18,7 @@ class Denormalizer:
 
     def to_linked_graph_df(self):
 
-        # Denormalize drugs and pubmed data
+        # Denormalize and merge drugs and pubmed data
         drugs_and_pubmed = \
             self.drugs.join(self.pubmed, f.lower(self.pubmed.title).contains(f.lower(self.drugs.drug))). \
             groupBy(self.drugs.drug, self.drugs.atccode). \
@@ -27,7 +27,7 @@ class Denormalizer:
 
         drugs_and_pubmed.show(truncate=False)
 
-        # Denormalize drugs and clinical trials data
+        # Denormalize and merge drugs and clinical trials data
         drugs_and_trials = \
             self.drugs.join(self.trials,
                             f.lower(self.trials.scientific_title).contains(f.lower(self.drugs.drug))).\

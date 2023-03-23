@@ -27,7 +27,8 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 ** commenté
 ** documenté (via ce présent document)
 ** découpé en 3 modules principaux en fonction des étapes de traitement
-** comporte des variables et des classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre
+** comporte des variables et des classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre et favoriser le code auto-documenté
+** testé via des tests unitaires présents dans le package `tests`
 
 === Pré-requis
 
@@ -35,6 +36,8 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 - PySpark installé et configuré (via `pip` ou `conda` par exemple) : https://spark.apache.org/docs/latest/api/python/getting_started/install.html[Document d'installation]
 
 === Exécution
+
+==== Le Job Batch
 
 Pour exécuter le projet, il suffit de cloner le projet, de se rendre dans le répertoire concerné et d'exécuter la commande `spark-submit` sur le fichier `main.py` :
 
@@ -75,7 +78,7 @@ Cette structure nous permet d'avoir, pour chaque médicament :
 Tout cela a été réalisé grâce à des jointures visibles dans le fichier `denormalizer.py` du package `transform`, en partant des données sur les médicaments.
 
 . Enfin, on écrit le DataFrame dénormalisé en JSON dans un répertoire de sortie ("output/json")grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark. Voici un exemple d'une ligne de JSON (façon "pretty" et non sur une seule ligne pour la lisibilité) :
-
++
 [source,json]
 ----
 {
@@ -92,6 +95,30 @@ Tout cela a été réalisé grâce à des jointures visibles dans le fichier `de
     }
   ]
 }
+----
+
+. L'exécution se termine avec le message suivant dans les logs :
++
+----
+Data have been successfully save as JSON records
+----
+
+==== Exécuter les tests unitaires
+
+Pour cela, rendez-vous via le terminal dans le dossier du projet et exécutez les commandes suivantes :
+
+----
+> pip install pyspark
+> python -m unittest tests/*/*.py
+----
+
+Le résultat qui apparait dans la console est :
+
+----
+----------------------------------------------------------------------
+Ran 6 tests in 17.085s
+
+OK
 ----
 
 === Traitement Ad-Hoc
@@ -131,6 +158,8 @@ Une fois exécuté sur le cluster, il est possible de rencontrer des ralentissem
 L'analyse de ces exécutions permettra de déterminer s'il y a par exemple du data skewing (car certaines étapes du code comporte des `groupBy`). Dans un tel cas, il faudra penser à modifier la façon de faire dans le code afin d'éviter le data skewing ou même un shuffling trop régulier.
 
 De plus, certains DataFrames seront peut-être recalculés plusieurs fois (car ils lisent plusieurs fois un même fichier par exemple). Dans ce cas, on pourra chercher à optimiser en utilisant les fonctions `.persist()` ou `.cache()` afin de mettre certains DataFrames en cache et leur éviter re-calcul.
+
+Il serait également nécessaire d'améliorer la gestion d'erreurs afin de réaliser un meilleur contrôle sur la qualité de données, en fonction des différents datasets réels.
 
 === Optimisation des données pour la lecture des données JSON
 
