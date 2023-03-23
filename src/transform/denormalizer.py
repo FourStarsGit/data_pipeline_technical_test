@@ -16,7 +16,7 @@ class Denormalizer:
         self.pubmed = pubmed
         self.trials = trials
 
-    def to_linked_graph_df(self):
+    def to_linked_graph_df(self, is_trace_enabled):
 
         # Denormalize and merge drugs and pubmed data
         drugs_and_pubmed = \
@@ -25,7 +25,8 @@ class Denormalizer:
             agg(f.collect_list(self.pubmed.date).alias(self.pubmed_dates),
                 f.collect_list(f.struct(self.pubmed.journal, self.pubmed.date)).alias(self.journal_pubmed_dates))
 
-        drugs_and_pubmed.show(truncate=False)
+        if is_trace_enabled:
+            drugs_and_pubmed.show(truncate=False)
 
         # Denormalize and merge drugs and clinical trials data
         drugs_and_trials = \
@@ -35,7 +36,8 @@ class Denormalizer:
             agg(f.collect_list(self.trials.date).alias(self.trial_dates),
                 f.collect_list(f.struct(self.trials.journal, self.trials.date)).alias(self.journal_trial_dates))
 
-        drugs_and_trials.show(truncate=False)
+        if is_trace_enabled:
+            drugs_and_trials.show(truncate=False)
 
         # Re-conciliate both dataframes
         return drugs_and_pubmed.join(drugs_and_trials, [self.drug], how=self.outer_mode). \
@@ -50,4 +52,3 @@ class Denormalizer:
     @staticmethod
     def clean_null(col):
         return f.when(col.isNull(), f.array()).otherwise(col)
-

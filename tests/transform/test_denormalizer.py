@@ -32,7 +32,7 @@ class TestDenormalizer(unittest.TestCase):
         denormalizer = Denormalizer(drugs, pubmed, clinical_trials)
 
         # WHEN
-        denormalized_df = denormalizer.to_linked_graph_df()
+        denormalized_df = denormalizer.to_linked_graph_df(False)
 
         # THEN
         assert denormalized_df.first() == Row(drug='DIPHENHYDRAMINE', atccode='A04AD', pubmed_dates=['01/01/2019'],

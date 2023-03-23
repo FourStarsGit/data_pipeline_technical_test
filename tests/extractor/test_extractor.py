@@ -61,4 +61,4 @@ class TestExtractor(unittest.TestCase):
         assert trials_df.first() == Row(id='NCT01967433',
                                         scientific_title='Use of Diphenhydramine as an Adjunctive Sedative for '
                                                          'Colonoscopy in Patients Chronically on Opioids',
-                                        date='1 January 2020', journal='Journal of emergency nursing')
+                                        date='01/01/2020', journal='Journal of emergency nursing')

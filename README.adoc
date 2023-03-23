@@ -25,9 +25,9 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 - Pour répondre à la problématique des bonnes pratiques, le code est :
 ** versionné (via Git) : le branching model consiste en la création de `feature branch`, une fois le développement terminé il suffit d'ouvrir une PR qui sera mergée après review par une autre personne de l'équipe
 ** commenté
-** documenté (via ce présent document)
+** documenté (via ce présent README)
 ** découpé en 3 modules principaux en fonction des étapes de traitement
-** comporte des variables et des classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre et favoriser le code auto-documenté
+** composé de variables et de classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre et favoriser le code auto-documenté
 ** testé via des tests unitaires présents dans le package `tests`
 
 === Pré-requis
@@ -103,6 +103,11 @@ Tout cela a été réalisé grâce à des jointures visibles dans le fichier `de
 Data have been successfully save as JSON records
 ----
 
+[NOTE]
+====
+Si le niveau de log activé est TRACE dans Spark, les différents DataFrames de l'ensemble de l'exécution apparaitront dans la console. La fonction utilisée est `.show()`, elle n'est volontairement appelée que pour des raisons de debug puisqu'elle réalise un retour au driver, ce qui ralentit considérablement les performances.
+====
+
 ==== Exécuter les tests unitaires
 
 Pour cela, rendez-vous via le terminal dans le dossier du projet et exécutez les commandes suivantes :
@@ -163,7 +168,7 @@ Il serait également nécessaire d'améliorer la gestion d'erreurs afin de réal
 
 === Optimisation des données pour la lecture des données JSON
 
-Pour le moment, il y a une union qui est réalisée entre les données JSON et CSV de `pubmed`, avec en plus la transformation du fichier JSON object en JSON records (pour être intégré dans Spark). Ceci est consommateur en temps et pour optimiser on pourrait réaliser ce traitement en dehors de Spark, via un module plus adapté, ou directement faire en sorte de réaliser cette modification à la sortie du producteur. Il faut bien évidemment voir quelques technologies sont utilisées pour produire ce fichier en amont et voir s'il est possible de générer le JSON records avant le traitement. Cela évitera l'étape de transformation qui est consommatrice.
+Pour le moment, il y a une union qui est réalisée entre les données JSON et CSV de `pubmed`, avec en plus la transformation du fichier d'entrée JSON object (`pubmed.json`) en JSON records (pour être intégré dans Spark). Ceci est consommateur en temps et pour optimiser on pourrait réaliser ce traitement en dehors du pipeline, via un module plus adapté, ou directement faire en sorte de réaliser cette modification à la sortie du producteur. Il faut bien évidemment voir quelques technologies sont utilisées pour produire ce fichier en amont et voir s'il est possible de générer le JSON records avant le traitement. Cela évitera l'étape de transformation qui est aujourd'hui consommatrice.
 
 === Base de données de destination
 
