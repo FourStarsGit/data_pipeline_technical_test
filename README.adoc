@@ -27,6 +27,7 @@ Le projet consiste à récupérer des données concernant des médicaments ainsi
 ** commenté
 ** documenté (via ce présent document)
 ** découpé en 3 modules principaux en fonction des étapes de traitement
+** comporte des variables et des classes dont le nommage est simple pour permettre une compréhension par le plus grand nombre
 
 === Pré-requis
 
@@ -73,7 +74,25 @@ Cette structure nous permet d'avoir, pour chaque médicament :
 +
 Tout cela a été réalisé grâce à des jointures visibles dans le fichier `denormalizer.py` du package `transform`, en partant des données sur les médicaments.
 
-. Enfin, on écrit le DataFrame dénormalisé en JSON grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark.
+. Enfin, on écrit le DataFrame dénormalisé en JSON dans un répertoire de sortie ("output/json")grâce à Spark (voir le package `write`). Volontairement, il s'agit de `JSON records` et non pas de JSON objects traditionnels. En effet, le format des `records` favorisent la distribution des données et la répartition des charges lors du traitement, ce qui est une bonne pratique dans un environnement Big Data. Cela permettra d'obtenir un traitement plus performant et plus optimisé, qui s'intègre de nativement avec Spark. Voici un exemple d'une ligne de JSON (façon "pretty" et non sur une seule ligne pour la lisibilité) :
+
+[source,json]
+----
+{
+  "drug": "ISOPRENALINE",
+  "atccode": "6302001",
+  "pubmed_dates": [
+    "01/01/2020"
+  ],
+  "trial_dates": [],
+  "journals_and_dates": [
+    {
+      "journal": "Journal of photochemistry and photobiology. B, Biology",
+      "date": "01/01/2020"
+    }
+  ]
+}
+----
 
 === Traitement Ad-Hoc
 
