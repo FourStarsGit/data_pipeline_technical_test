@@ -137,7 +137,7 @@ On affiche enfin le journal qui cite le plus de médicaments. En cas d'égalité
 Pour exécuter le programme, il suffit d'exécuter la commande suivante (l'argument est le dossier où se situe(nt)) le(s) fichier(s) JSON à lire) :
 
 ----
-> park-submit get_journal_with_most_drugs.py output/json/
+> spark-submit get_journal_with_most_drugs.py output/json/
 ----
 
 Et d'observer le message du type suivant dans la console :
